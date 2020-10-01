@@ -1,0 +1,8 @@
+#!/bin/bash
+set -euo pipefail
+
+env
+
+echo -e "\n=====\n"
+
+cat -s
