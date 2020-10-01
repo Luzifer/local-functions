@@ -8,7 +8,7 @@
 
 `local-functions` is intended as the opposite of Cloud-Functions: Run scripts on the local machine through HTTP calls.
 
-**Be aware:** This will expose scripts in a certain folder on your machine. This might cause trouble for you! So you really should only expose the server on **localhost** and ensure nobody else is able to access the API.
+**Be aware:** This will expose scripts in a certain folder on your machine. This might cause trouble for you! So you really should only expose the server on **localhost** and ensure nobody else is able to access the API. And **never ever** run this as root! (Or say good bye to your system!)
 
 ## Examples
 
