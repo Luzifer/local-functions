@@ -67,19 +67,19 @@ func handleScriptCall(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var (
-		stdout = new(bytes.Buffer)
-		cmd    = exec.Command(script)
+		stdout  = new(bytes.Buffer)
+		cmd     = exec.Command(script)
+		envVars = env.ListToMap(os.Environ())
 	)
 
+	envVars["ACCEPT"] = r.Header.Get("Accept")
+	envVars["CONTENT_TYPE"] = r.Header.Get("Content-Type")
+	envVars["METHOD"] = r.Method
+
+	cmd.Env = env.MapToList(envVars)
 	cmd.Stdout = stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = r.Body
-
-	cmd.Env = env.MapToList(map[string]string{
-		"ACCEPT":       r.Header.Get("Accept"),
-		"CONTENT_TYPE": r.Header.Get("Content-Type"),
-		"METHOD":       r.Method,
-	})
 
 	if err := cmd.Run(); err != nil {
 		http.Error(w, "Script execution failed, see log", http.StatusInternalServerError)
