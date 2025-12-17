@@ -1,8 +1,6 @@
-[![Go Report Card](https://goreportcard.com/badge/github.com/Luzifer/local-functions)](https://goreportcard.com/report/github.com/Luzifer/local-functions)
-![](https://badges.fyi/github/license/Luzifer/local-functions)
-![](https://badges.fyi/github/downloads/Luzifer/local-functions)
-![](https://badges.fyi/github/latest-release/Luzifer/local-functions)
-![](https://knut.in/project-status/local-functions)
+![](https://img.shields.io/github/license/Luzifer/local-functions)
+![](https://img.shields.io/github/downloads/Luzifer/local-functions/total)
+![](https://img.shields.io/github/v/release/Luzifer/local-functions)
 
 # Luzifer / local-functions
 
