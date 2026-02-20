@@ -12,8 +12,8 @@ import (
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/Luzifer/go_helpers/v2/env"
-	httpHelper "github.com/Luzifer/go_helpers/v2/http"
+	"github.com/Luzifer/go_helpers/env"
+	httpHelper "github.com/Luzifer/go_helpers/http"
 	"github.com/Luzifer/rconfig/v2"
 )
 
