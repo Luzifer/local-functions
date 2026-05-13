@@ -1,74 +1,103 @@
+// Local-Functions Utility Server
 package main
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"os/exec"
-	"path"
-
-	"github.com/gorilla/mux"
-	log "github.com/sirupsen/logrus"
+	"path/filepath"
+	"time"
 
 	"github.com/Luzifer/go_helpers/env"
-	httpHelper "github.com/Luzifer/go_helpers/http"
+	httphelper "github.com/Luzifer/go_helpers/http"
 	"github.com/Luzifer/rconfig/v2"
+	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 )
 
 var (
 	cfg = struct {
-		Listen         string `flag:"listen" default:"127.0.0.1:3000" description:"Port/IP to listen on"`
-		LogLevel       string `flag:"log-level" default:"info" description:"Log level (debug, info, warn, error, fatal)"`
-		ScriptDir      string `flag:"script-dir" default:"./scripts" description:"Directory to execute the script / binary from"`
-		VersionAndExit bool   `flag:"version" default:"false" description:"Prints current version and exits"`
+		CommandTimeout time.Duration `flag:"command-timeout" default:"30s" description:"How long a script may maximum take to execute"`
+		Listen         string        `flag:"listen" default:"127.0.0.1:3000" description:"Port/IP to listen on"`
+		LogLevel       string        `flag:"log-level" default:"info" description:"Log level (debug, info, warn, error, fatal)"`
+		ScriptDir      string        `flag:"script-dir" default:"./scripts" description:"Directory to execute the script / binary from"`
+		VersionAndExit bool          `flag:"version" default:"false" description:"Prints current version and exits"`
 	}{}
 
 	version = "dev"
 )
 
-func init() {
+func initApp() (err error) {
 	rconfig.AutoEnv(true)
 	if err := rconfig.ParseAndValidate(&cfg); err != nil {
-		log.Fatalf("Unable to parse commandline options: %s", err)
+		return fmt.Errorf("parsing CLI options: %w", err)
 	}
 
-	if cfg.VersionAndExit {
-		fmt.Printf("local-functions %s\n", version)
-		os.Exit(0)
+	l, err := logrus.ParseLevel(cfg.LogLevel)
+	if err != nil {
+		return fmt.Errorf("parsing log-level: %w", err)
 	}
+	logrus.SetLevel(l)
 
-	if l, err := log.ParseLevel(cfg.LogLevel); err != nil {
-		log.WithError(err).Fatal("Unable to parse log level")
-	} else {
-		log.SetLevel(l)
-	}
+	return nil
 }
 
 func main() {
+	var err error
+	if err = initApp(); err != nil {
+		logrus.WithError(err).Fatal("initializing app")
+	}
+
+	if cfg.VersionAndExit {
+		fmt.Printf("local-functions %s\n", version) //nolint:forbidigo // fine to print version to stdout
+		os.Exit(0)
+	}
+
 	r := mux.NewRouter()
 	r.HandleFunc("/{script}", handleScriptCall)
 
-	var h http.Handler = r
-	h = httpHelper.NewHTTPLogHandler(h)
-	http.ListenAndServe(cfg.Listen, h)
+	var hdl http.Handler = r
+	hdl = httphelper.NewHTTPLogHandler(hdl)
+
+	srv := &http.Server{
+		Addr:              cfg.Listen,
+		Handler:           hdl,
+		ReadHeaderTimeout: time.Second,
+	}
+
+	logrus.WithField("addr", cfg.Listen).Info("local-functions started")
+	if err = srv.ListenAndServe(); err != nil {
+		logrus.WithError(err).Fatal("listening for HTTP traffic")
+	}
 }
 
 func handleScriptCall(w http.ResponseWriter, r *http.Request) {
 	var (
 		vars   = mux.Vars(r)
-		script = path.Join(cfg.ScriptDir, vars["script"])
+		script = filepath.Join(cfg.ScriptDir, vars["script"])
 	)
+
+	if err := validateScriptContained(script); err != nil {
+		logrus.WithField("script", script).Error("path traversal attempt")
+		http.Error(w, "Not found", http.StatusNotFound)
+		return
+	}
 
 	if _, err := os.Stat(script); vars["script"] == "" || os.IsNotExist(err) {
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
 
+	ctx, cancel := context.WithTimeout(r.Context(), cfg.CommandTimeout)
+	defer cancel()
+
 	var (
 		stdout  = new(bytes.Buffer)
-		cmd     = exec.Command(script)
+		cmd     = exec.CommandContext(ctx, script) //#nosec:G204 // Intended to run scripts provided in scripts dir
 		envVars = env.ListToMap(os.Environ())
 	)
 
@@ -89,5 +118,5 @@ func handleScriptCall(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Method", "*")
 
-	io.Copy(w, stdout)
+	_, _ = io.Copy(w, stdout)
 }

@@ -1,0 +1,5 @@
+#!/bin/bash
+set -euo pipefail
+
+sleep 900
+echo "hello there"
