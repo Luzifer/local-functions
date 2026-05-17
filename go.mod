@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/Luzifer/go_helpers/env v0.5.2
-	github.com/Luzifer/go_helpers/http v0.12.4
+	github.com/Luzifer/go_helpers/http v0.12.5
 	github.com/Luzifer/rconfig/v2 v2.6.2
 	github.com/gorilla/mux v1.8.1
 	github.com/sirupsen/logrus v1.9.4
@@ -12,7 +12,7 @@ require (
 )
 
 require (
-	github.com/Luzifer/go_helpers/accesslogger v0.1.1 // indirect
+	github.com/Luzifer/go_helpers/accesslogger v0.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
